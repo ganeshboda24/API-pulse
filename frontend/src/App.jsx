@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import "./App.css";
 
-const API = "http://127.0.0.1:8000";
+const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 const DEFAULT_URLS = [
   "https://example.com",
@@ -60,6 +60,7 @@ function App() {
 
   async function checkWebsite(event) {
     event.preventDefault();
+
     setLoading(true);
     setError("");
     setResult(null);
@@ -84,6 +85,7 @@ function App() {
 
   async function checkBatch(event) {
     event.preventDefault();
+
     setBatchLoading(true);
     setError("");
     setBatchResults([]);
@@ -143,20 +145,26 @@ function App() {
     (item) => item.reachable === true
   ).length;
 
-  const latestStatus = history[0]?.status_code ?? "—";
+  const latestStatus = history[0]?.status_code ?? "â€”";
 
   return (
     <main className="dashboard">
       <header className="topbar">
         <div className="brand">
-          <div className="brand-icon">H</div>
+          <div className="brand-icon" aria-hidden="true">
+            P
+          </div>
+
           <div>
-            <h1>API Health Monitor</h1>
-            <p>Website availability dashboard</p>
+            <h1>API Pulse</h1>
+            <p>Real-time website monitoring</p>
           </div>
         </div>
 
-        <span className={`api-status ${apiOnline ? "online" : "offline"}`}>
+        <span
+          className={`api-status ${apiOnline ? "online" : "offline"}`}
+          aria-live="polite"
+        >
           <span className="status-dot" />
           API {apiOnline ? "Online" : "Offline"}
         </span>
@@ -164,9 +172,13 @@ function App() {
 
       <section className="welcome">
         <p className="eyebrow">MONITORING OVERVIEW</p>
-        <h2>Know when your websites are up.</h2>
+
+        <h2>
+          Know when your websites are <span>up.</span>
+        </h2>
+
         <p>
-          Monitor website reachability, HTTP status codes, response times,
+          Monitor website availability, HTTP status codes, response times,
           and previous checks in one place.
         </p>
       </section>
@@ -174,13 +186,14 @@ function App() {
       {error && (
         <div className="error-banner" role="alert">
           <span>{error}</span>
+
           <button
             type="button"
             className="dismiss-button"
             onClick={() => setError("")}
             aria-label="Dismiss error"
           >
-            ×
+            Ã—
           </button>
         </div>
       )}
@@ -190,16 +203,21 @@ function App() {
           label="Saved Checks"
           value={history.length}
           detail="Recent database records"
+          symbol="01"
         />
+
         <Metric
           label="Reachable Records"
           value={reachableCount}
           detail="Among recent saved checks"
+          symbol="02"
         />
+
         <Metric
           label="Latest HTTP Status"
           value={latestStatus}
           detail="Most recent saved check"
+          symbol="03"
         />
       </section>
 
@@ -208,7 +226,11 @@ function App() {
           <div>
             <p className="eyebrow">QUICK TEST</p>
             <h3>Single Website Check</h3>
+            <p className="section-description">
+              Test the availability and response time of a website.
+            </p>
           </div>
+
           <span className="section-icon">01</span>
         </div>
 
@@ -226,9 +248,20 @@ function App() {
             />
 
             <button type="submit" disabled={loading}>
-              {loading ? "Checking..." : "Check Website"}
+              {loading ? (
+                <>
+                  <span className="button-spinner" />
+                  Checking...
+                </>
+              ) : (
+                "Check Website"
+              )}
             </button>
           </div>
+
+          <p className="helper-text">
+            Enter the full URL, including https://
+          </p>
         </form>
 
         {result && (
@@ -257,16 +290,18 @@ function App() {
                 label="Reachable"
                 value={result.reachable ? "Yes" : "No"}
               />
+
               <Metric
                 label="HTTP Status"
-                value={result.status_code ?? "—"}
+                value={result.status_code ?? "â€”"}
               />
+
               <Metric
                 label="Response Time"
                 value={
                   result.response_time_ms != null
                     ? `${result.response_time_ms} ms`
-                    : "—"
+                    : "â€”"
                 }
               />
             </div>
@@ -283,7 +318,11 @@ function App() {
           <div>
             <p className="eyebrow">MULTI-SITE TEST</p>
             <h3>Batch Website Check</h3>
+            <p className="section-description">
+              Check up to 10 websites in one request.
+            </p>
           </div>
+
           <span className="section-icon">02</span>
         </div>
 
@@ -306,7 +345,14 @@ function App() {
           </p>
 
           <button type="submit" disabled={batchLoading}>
-            {batchLoading ? "Checking websites..." : "Check All Websites"}
+            {batchLoading ? (
+              <>
+                <span className="button-spinner" />
+                Checking websites...
+              </>
+            ) : (
+              "Check All Websites"
+            )}
           </button>
         </form>
 
@@ -326,20 +372,17 @@ function App() {
                 {batchResults.map((item, index) => (
                   <tr key={`${item.url}-${index}`}>
                     <td className="website-cell">{item.url}</td>
+
                     <td>
-                      <span
-                        className={`table-status ${
-                          item.reachable ? "good" : "bad"
-                        }`}
-                      >
-                        {item.reachable ? "Yes" : "No"}
-                      </span>
+                      <StatusBadge reachable={item.reachable} />
                     </td>
-                    <td>{item.status_code ?? "—"}</td>
+
+                    <td>{item.status_code ?? "â€”"}</td>
+
                     <td>
                       {item.response_time_ms != null
                         ? `${item.response_time_ms} ms`
-                        : "—"}
+                        : "â€”"}
                     </td>
                   </tr>
                 ))}
@@ -354,8 +397,8 @@ function App() {
           <div>
             <p className="eyebrow">DATABASE</p>
             <h3>Recent Health History</h3>
-            <p className="helper-text">
-              Previously saved website checks
+            <p className="section-description">
+              Review your previously saved website checks.
             </p>
           </div>
 
@@ -365,7 +408,7 @@ function App() {
             onClick={loadHistory}
             disabled={historyLoading}
           >
-            {historyLoading ? "Refreshing..." : "Refresh History"}
+            {historyLoading ? "Refreshing..." : "â†» Refresh History"}
           </button>
         </div>
 
@@ -392,21 +435,19 @@ function App() {
                 {history.map((item, index) => (
                   <tr key={item.id ?? `${item.url}-${index}`}>
                     <td className="website-cell">{item.url}</td>
+
                     <td>
-                      <span
-                        className={`table-status ${
-                          item.reachable ? "good" : "bad"
-                        }`}
-                      >
-                        {item.reachable ? "Yes" : "No"}
-                      </span>
+                      <StatusBadge reachable={item.reachable} />
                     </td>
-                    <td>{item.status_code ?? "—"}</td>
+
+                    <td>{item.status_code ?? "â€”"}</td>
+
                     <td>
                       {item.response_time_ms != null
                         ? `${item.response_time_ms} ms`
-                        : "—"}
+                        : "â€”"}
                     </td>
+
                     <td>{formatDate(item.checked_at)}</td>
                   </tr>
                 ))}
@@ -417,25 +458,43 @@ function App() {
       </section>
 
       <footer>
-        <span>API Health Monitor</span>
-        <span>Built with React · FastAPI · SQLite</span>
+        <span className="footer-brand">
+          <span className="footer-dot" />
+          API Pulse
+        </span>
+
+        <span>Built with React Â· FastAPI Â· SQLite</span>
       </footer>
     </main>
   );
 }
 
-function Metric({ label, value, detail }) {
+function Metric({ label, value, detail, symbol }) {
   return (
     <div className="metric-card">
-      <span className="metric-label">{label}</span>
+      <div className="metric-topline">
+        <span className="metric-label">{label}</span>
+        {symbol && <span className="metric-symbol">{symbol}</span>}
+      </div>
+
       <strong className="metric-value">{value}</strong>
+
       {detail && <span className="metric-detail">{detail}</span>}
     </div>
   );
 }
 
+function StatusBadge({ reachable }) {
+  return (
+    <span className={`table-status ${reachable ? "good" : "bad"}`}>
+      <span className="badge-dot" />
+      {reachable ? "Reachable" : "Unreachable"}
+    </span>
+  );
+}
+
 function formatDate(value) {
-  if (!value) return "—";
+  if (!value) return "â€”";
 
   const date = new Date(value);
 
