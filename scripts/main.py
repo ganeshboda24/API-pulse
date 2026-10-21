@@ -340,3 +340,18 @@ def get_health_history(
 
     finally:
         db.close()
+
+
+@app.delete("/health/history")
+def delete_health_history():
+    db = SessionLocal()
+
+    try:
+        deleted_records = db.query(HealthCheck).delete(synchronize_session=False)
+        db.commit()
+        return {"deleted_records": deleted_records}
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
