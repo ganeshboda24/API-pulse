@@ -86,10 +86,15 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    checkApi();
-    loadHistory();
+    const initialLoad = window.setTimeout(() => {
+      void checkApi();
+      void loadHistory();
+    }, 0);
     const intervalId = setInterval(checkApi, 60000);
-    return () => clearInterval(intervalId);
+    return () => {
+      window.clearTimeout(initialLoad);
+      clearInterval(intervalId);
+    };
   }, [checkApi, loadHistory]);
 
   function validateUrl(value) {
@@ -259,7 +264,7 @@ function App() {
       .map((row) =>
         row
           .map((cell) => {
-            const safeCell = /^[\u0000-\u0020]*[=+\-@]/.test(String(cell))
+            const safeCell = /^[=+\-@]/.test(String(cell).trimStart())
               ? `'${cell}`
               : cell;
             return `"${String(safeCell).replaceAll('"', '""')}"`;
