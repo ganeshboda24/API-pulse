@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: api-pulse-api
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements-render.txt
+    startCommand: uvicorn scripts.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /ready
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DATABASE_URL
+        value: sqlite:////var/data/health_monitor.db
+      - key: FRONTEND_ORIGINS
+        value: https://api-pulse-peach.vercel.app,http://localhost:5173,http://127.0.0.1:5173
+    disk:
+      name: api-pulse-data
+      mountPath: /var/data
+      sizeGB: 1
