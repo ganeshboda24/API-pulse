@@ -48,7 +48,10 @@ the exact origin(s), separated by commas, and redeploy the API.
 4. Deploy or redeploy the frontend after setting the variable.
 
 The frontend uses the local FastAPI URL during development and the configured
-`VITE_API_URL` in deployment. Its production fallback is the Render URL above.
+`VITE_API_URL` in deployment. Its production fallback is
+`https://api-pulse-api.onrender.com`, matching the service name in
+`render.yaml`. The dashboard checks `/ready`, so it reports the backend online
+only when the database is available too.
 
 ## Verify the connection
 
@@ -92,6 +95,8 @@ origins allowed to call the API.
   and returns HTTP 503 if the database is unavailable.
 - `GET /health?url=...`, `POST /health/batch`, and
   `GET /health/history?limit=...` provide the check and history operations.
+  `DELETE /health/history` permanently deletes all saved checks; the dashboard
+  asks for confirmation before calling it.
 - Outbound checks accept HTTP/HTTPS URLs, reject embedded credentials and
   non-public IP/DNS destinations, disable environment proxy use, limit
   redirects, and validate each redirect destination. Batch work is limited to
@@ -105,7 +110,9 @@ origins allowed to call the API.
 - Theme selection is stored in browser local storage. No account/authentication
   or rate limiting is currently provided for the API or stored history. It is
   not suitable as a public, untrusted URL-checking service without additional
-  access control, rate limiting, and IP-pinned outbound connections.
+  access control, rate limiting, and IP-pinned outbound connections. The
+  history-delete endpoint is also unauthenticated, so anyone who can reach the
+  API can erase the shared history.
 - History uses a horizontally scrollable data table on small screens. A
   dedicated mobile card layout, command palette, pulse strips, chart, social
   preview image, and scheduled monitoring are not implemented yet.

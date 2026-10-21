@@ -76,6 +76,8 @@ a { color: inherit; }
 .header-actions { display: flex; align-items: center; gap: 9px; margin-left: auto; }
 .icon-button, .secondary-button, .theme-control select { min-height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 600; }
 .icon-button:hover:not(:disabled), .secondary-button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.danger-button { color: var(--red); }
+.danger-button:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
 .theme-control select { min-width: 95px; }
 .api-status { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; color: var(--slate); font-size: 12px; font-weight: 650; white-space: nowrap; }
 .api-status.online { border-color: var(--green); color: var(--green); }

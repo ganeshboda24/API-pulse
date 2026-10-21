@@ -3,7 +3,7 @@ import axios from "axios";
 import "./App.css";
 
 const defaultApiUrl = import.meta.env.PROD
-  ? "https://api-pulse-hly3.onrender.com"
+  ? "https://api-pulse-api.onrender.com"
   : "http://127.0.0.1:8000";
 const API = (import.meta.env.VITE_API_URL || defaultApiUrl).replace(/\/+$/, "");
 const EMPTY_VALUE = "\u2014";
@@ -30,6 +30,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [batchLoading, setBatchLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyDeleting, setHistoryDeleting] = useState(false);
   const [historyError, setHistoryError] = useState("");
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -61,12 +62,39 @@ function App() {
 
   const checkApi = useCallback(async () => {
     try {
-      await axios.get(`${API}/`, { timeout: 65000 });
+      await axios.get(`${API}/ready`, { timeout: 65000 });
       setApiState("online");
     } catch {
       setApiState("offline");
     }
   }, []);
+
+  async function deleteHistory() {
+    if (
+      history.length === 0 ||
+      loading ||
+      batchLoading ||
+      !window.confirm(
+        "Delete all saved check history for everyone? This cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    setHistoryDeleting(true);
+    setHistoryError("");
+    try {
+      await axios.delete(`${API}/health/history`);
+      setHistory([]);
+      setPage(1);
+    } catch (err) {
+      setHistoryError(
+        err.response?.data?.detail || "Could not delete check history. Try again."
+      );
+    } finally {
+      setHistoryDeleting(false);
+    }
+  }
 
   useEffect(() => {
     const root = document.documentElement;
@@ -351,7 +379,7 @@ function App() {
             <label htmlFor="website-url">Website URL</label>
             <div className="input-row">
               <input id="website-url" type="url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com" aria-describedby="website-help" required />
-              <button type="submit" disabled={loading}>
+              <button type="submit" disabled={loading || historyDeleting}>
                 {loading && <span className="button-spinner" aria-hidden="true" />}
                 {loading ? "Checking…" : "Check website"}
               </button>
@@ -390,7 +418,7 @@ function App() {
             <textarea id="batch-urls" rows={5} value={batchUrls} onChange={(event) => setBatchUrls(event.target.value)} placeholder={"https://example.com\nhttps://www.google.com"} aria-describedby="batch-help" required />
             <p className="helper-text" id="batch-help">One URL per line or separated by commas. Invalid entries are reported individually.</p>
             <p className="helper-text" role="status">{validBatchEntryCount} valid, {invalidBatchEntryCount} invalid of {enteredBatchUrls.length} entered.</p>
-            <button type="submit" disabled={batchLoading}>
+            <button type="submit" disabled={batchLoading || historyDeleting}>
               {batchLoading && <span className="button-spinner" aria-hidden="true" />}
               {batchLoading ? "Checking websites…" : "Check all websites"}
             </button>
@@ -418,13 +446,12 @@ function App() {
         <section className="check-card" id="history">
           <div className="section-heading history-heading">
             <div>
-              <p className="eyebrow">DATABASE</p>
-              <h2>Recent check history</h2>
-              <p className="section-description">Search and filter up to the latest {HISTORY_LIMIT} records returned by the API.</p>
+              <h2>Check history</h2>
             </div>
             <div className="history-actions">
               <button type="button" className="secondary-button" onClick={exportHistory} disabled={filteredHistory.length === 0}>Export CSV</button>
-              <button type="button" className="secondary-button" onClick={loadHistory} disabled={historyLoading}>{historyLoading ? "Refreshing…" : "Refresh history"}</button>
+              <button type="button" className="secondary-button" onClick={loadHistory} disabled={historyLoading || historyDeleting}>{historyLoading ? "Refreshing…" : "Refresh history"}</button>
+              <button type="button" className="secondary-button danger-button" onClick={deleteHistory} disabled={history.length === 0 || historyLoading || historyDeleting || loading || batchLoading}>{historyDeleting ? "Deleting…" : "Delete history"}</button>
             </div>
           </div>
 
@@ -447,7 +474,7 @@ function App() {
           ) : historyLoading && history.length === 0 ? (
             <p className="empty-state" role="status">Loading saved checks…</p>
           ) : filteredHistory.length === 0 ? (
-            <p className="empty-state">{history.length === 0 ? "No saved checks yet. Run a website check to start building your history." : "No checks match these filters."}</p>
+            history.length > 0 && <p className="empty-state">No checks match these filters.</p>
           ) : (
             <>
               <div className="table-wrap">
